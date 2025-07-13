@@ -1,4 +1,8 @@
+from typing import Optional
+
 from src.AddressBook import AddressBook
+from src.Record import Record
+
 
 def input_error(func):
     def inner(*args, **kwargs):
@@ -24,30 +28,86 @@ def parse_input(user_input: str) -> tuple:
 @input_error
 def add_contact(args: tuple[str, str], contacts: AddressBook) -> str:
     name, phone = args
-    record = Record(name)
-    record.add_phone(phone)
-    contacts.add_record(record)
+
+    record = contacts.find(name)
+
+    if record:
+        record.add_phone(phone)
+    else:
+        record = Record(name)
+        record.add_phone(phone)
+        contacts.add_record(record)
+
     return "Contact added."
 
 
 @input_error
-def change_contact(args: tuple[str, str], contacts: AddressBook) -> str:
-    name, phone = args
+def change_contact(args: tuple[str, str, str], contacts: AddressBook) -> str:
+    name, old_phone, phone = args
 
-    if name not in contacts:
+    record = contacts.find(name)
+    if not record:
         raise KeyError(f"No such contact: {name}")
 
-    contacts[name] = phone
+    record.edit_phone(old_phone, phone)
     return "Contact updated."
 
 
 @input_error
-def show_phone(args: tuple[str], contacts: dict) -> str:
+def show_record(args: tuple[str], contacts: AddressBook) -> Optional[Record]:
     name = args[0]
-    return contacts[name]
+    return contacts.find(name)
 
 
-def show_all(args: tuple[str, str], contacts: dict) -> dict:
+@input_error
+def show_phones(args: tuple[str], contacts: AddressBook) -> list[str]:
+    name = args[0]
+
+    record = contacts.find(name)
+    if not record:
+        raise KeyError(f"No such contact: {name}")
+
+    return list(map(lambda phone: phone.value, record.phones))
+
+
+@input_error
+def add_birthday(args: tuple[str, str], contacts: AddressBook) -> str:
+    name, birthday = args
+
+    record = contacts.find(name)
+    if not record:
+        raise KeyError(f"No such contact: {name}")
+
+    record.add_birthday(birthday)
+
+    return 'Birthday changed.'
+
+
+@input_error
+def show_birthday(args: tuple[str], contacts: AddressBook) -> list[str]:
+    name = args[0]
+
+    record = contacts.find(name)
+    if not record:
+        raise KeyError(f"No such contact: {name}")
+
+    return record.birthday.value.strftime("%d.%m.%Y")
+
+
+@input_error
+def birthdays(args: tuple[str], contacts: AddressBook) -> list[dict[str, str]]:
+    return list(
+        map(
+            lambda record: {
+                'name': record.name.value,
+                'birthday': record.birthday.value.strftime("%d.%m")
+            },
+            contacts.get_upcoming_birthdays()
+        )
+    )
+
+
+def show_all(args: tuple[str, str], contacts: AddressBook) -> AddressBook:
     return contacts
 
 
@@ -68,9 +128,18 @@ def main() -> None:
         elif command == "change":
             print(change_contact(args, contacts))
         elif command == "show":
-            print(show_phone(args, contacts))
+            print(show_record(args, contacts))
+        elif command == "phone":
+            print(show_phones(args, contacts))
+        elif command == "add-birthday":
+            print(add_birthday(args, contacts))
+        elif command == "show-birthday":
+            print(show_birthday(args, contacts))
+        elif command == "birthdays":
+            print(birthdays(args, contacts))
         elif command == "all":
-            print(show_all(args, contacts))
+            for record in show_all(args, contacts):
+                print(record)
         else:
             print("Invalid command.")
 

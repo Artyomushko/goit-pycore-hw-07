@@ -1,4 +1,4 @@
-from Field import Field
+from src.Fields.Field import Field
 
 
 class Phone(Field):

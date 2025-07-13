@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from Field import Field
+from src.Fields.Field import Field
 
 
 class Birthday(Field):
